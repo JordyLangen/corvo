@@ -8,16 +8,10 @@ import com.squareup.javapoet.TypeSpec
 import dagger.Component
 import javax.annotation.processing.*
 import javax.lang.model.SourceVersion
-import javax.lang.model.element.TypeElement
-import javax.lang.model.type.MirroredTypeException
-import javax.lang.model.type.MirroredTypesException
 import javax.lang.model.util.Elements
 import javax.lang.model.util.Types
 import kotlin.reflect.KClass
-import com.sun.deploy.util.SystemUtils.getSimpleName
-import javax.lang.model.element.ExecutableElement
-import javax.lang.model.element.AnnotationMirror
-import javax.lang.model.element.AnnotationValue
+import javax.lang.model.element.*
 
 
 class CorvoAnnotationProcessor : AbstractProcessor() {
@@ -53,22 +47,38 @@ class CorvoAnnotationProcessor : AbstractProcessor() {
             for (annotationMirror in annotationMirrors) {
                 for (entry in annotationMirror.elementValues.entries) {
                     if (entry.key.simpleName.toString() == "dependency") {
-                        println(entry.value.toString())
+                        val className = entry.value.value.toString()
+                        val klass = Class.forName(className).kotlin
+
+                        if (!dependencies.contains(klass)) {
+                            dependencies.add(klass)
+                        }
+                    }
+                    else if (entry.key.simpleName.toString() == "module") {
+                        val className = entry.value.value.toString()
+                        val klass = Class.forName(className).kotlin
+
+                        if (!modules.contains(klass)) {
+                            modules.add(klass)
+                        }
                     }
                 }
             }
         }
 
         val componentAnnotation = AnnotationSpec.builder(Component::class.java)
-                .addMember("modules", modules.map { it.qualifiedName }.joinToString(separator = ", ", prefix = "{ ", postfix = " }"))
+                .addMember("modules", modules.map { "${it.qualifiedName}.class" }.joinToString(separator = ", ", prefix = "{ ", postfix = " }"))
                 .build()
 
         val methods = dependencies.map { dependency ->
             MethodSpec.methodBuilder("resolve${dependency.simpleName}")
+                    .addModifiers(Modifier.PUBLIC, Modifier.ABSTRACT)
+                    .returns(dependency.java)
                     .build()
         }
 
         val typeSpec = TypeSpec.interfaceBuilder("CorvoComponent")
+                .addModifiers(Modifier.PUBLIC)
                 .addAnnotation(componentAnnotation)
                 .addMethods(methods)
                 .build()
