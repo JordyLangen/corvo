@@ -26,6 +26,9 @@ dependencies {
 
     compile project(':corvo')
     kapt project(':corvo-compiler')
+
+    compile "com.google.dagger:dagger:${versions.dagger}"
+    kapt "com.google.dagger:dagger-compiler:${versions.dagger}"
 }
 repositories {
     mavenCentral()
