@@ -3,13 +3,22 @@ package com.jordylangen.corvo.compiler
 import com.jordylangen.corvo.annotations.BindsTo
 import com.squareup.javapoet.AnnotationSpec
 import com.squareup.javapoet.JavaFile
+import com.squareup.javapoet.MethodSpec
 import com.squareup.javapoet.TypeSpec
 import dagger.Component
 import javax.annotation.processing.*
 import javax.lang.model.SourceVersion
 import javax.lang.model.element.TypeElement
+import javax.lang.model.type.MirroredTypeException
+import javax.lang.model.type.MirroredTypesException
 import javax.lang.model.util.Elements
 import javax.lang.model.util.Types
+import kotlin.reflect.KClass
+import com.sun.deploy.util.SystemUtils.getSimpleName
+import javax.lang.model.element.ExecutableElement
+import javax.lang.model.element.AnnotationMirror
+import javax.lang.model.element.AnnotationValue
+
 
 class CorvoAnnotationProcessor : AbstractProcessor() {
 
@@ -32,24 +41,42 @@ class CorvoAnnotationProcessor : AbstractProcessor() {
             return true
         }
 
+        val dependencies = mutableListOf<KClass<*>>()
+        val modules = mutableListOf<KClass<*>>()
+
+        for (element in roundEnv.getElementsAnnotatedWith(BindsTo::class.java)) {
+
+            val annotationMirrors = element.annotationMirrors.filter { mirror ->
+                mirror.annotationType.toString() == BindsTo::class.qualifiedName
+            }
+
+            for (annotationMirror in annotationMirrors) {
+                for (entry in annotationMirror.elementValues.entries) {
+                    if (entry.key.simpleName.toString() == "dependency") {
+                        println(entry.value.toString())
+                    }
+                }
+            }
+        }
+
         val componentAnnotation = AnnotationSpec.builder(Component::class.java)
-                .addMember("modules", "{ jordylangen.corvo.example.SampleModule.class }")
+                .addMember("modules", modules.map { it.qualifiedName }.joinToString(separator = ", ", prefix = "{ ", postfix = " }"))
                 .build()
+
+        val methods = dependencies.map { dependency ->
+            MethodSpec.methodBuilder("resolve${dependency.simpleName}")
+                    .build()
+        }
 
         val typeSpec = TypeSpec.interfaceBuilder("CorvoComponent")
                 .addAnnotation(componentAnnotation)
+                .addMethods(methods)
                 .build()
 
         val file = JavaFile.builder("com.jordylangen.corvo", typeSpec)
                 .build()
 
         file.writeTo(filer)
-
-        /*
-        for (element in roundEnv.getElementsAnnotatedWith(BindsTo::class.java)) {
-            println(element.simpleName)
-        }
-        */
 
         didProcess = true
 
