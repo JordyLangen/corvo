@@ -7,7 +7,12 @@ import com.squareup.coordinators.CoordinatorProvider
 
 class CorvoCoordinatorProvider(private val corvo: Corvo) : CoordinatorProvider {
 
-    override fun provideCoordinator(view: View): Coordinator {
-        return corvo.resolveBinding(view.javaClass.canonicalName) as Coordinator
+    override fun provideCoordinator(view: View): Coordinator? {
+        val coordinator = corvo.resolveBinding(view.javaClass.canonicalName)
+        if (coordinator != null) {
+            return coordinator as Coordinator
+        } else {
+            return null
+        }
     }
 }

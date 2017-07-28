@@ -5,7 +5,6 @@ import com.jordylangen.corvo.annotations.BindsTo
 import com.squareup.javapoet.*
 import dagger.Component
 import java.lang.IllegalArgumentException
-import java.lang.reflect.Method
 import java.util.HashMap
 import javax.annotation.processing.*
 import javax.lang.model.SourceVersion
@@ -84,7 +83,7 @@ class CorvoAnnotationProcessor : AbstractProcessor() {
                 .addStatement("this.bindings = new HashMap<String, String>()")
 
         for ((dependent, dependency) in bindings) {
-            proxyConstructorBuilder.addStatement("this.bindings.put(\"${dependent.java.canonicalName}\", \"${dependency.java.canonicalName}\")")
+            proxyConstructorBuilder.addStatement("this.bindings.put(\"$dependent\", \"${dependency.java.canonicalName}\")")
         }
 
         val resolveMethodBuilder = MethodSpec.methodBuilder("resolve")
@@ -92,6 +91,7 @@ class CorvoAnnotationProcessor : AbstractProcessor() {
                 .addTypeVariable(TypeVariableName.get("T"))
                 .addParameter(String::class.java, "className")
                 .addStatement("String dependency = bindings.get(className)")
+                .addStatement("if (!bindings.containsKey(dependency)) { return null; }")
                 .returns(TypeVariableName.get("T"))
 
         for (binding in bindings) {
@@ -139,8 +139,7 @@ class CorvoAnnotationProcessor : AbstractProcessor() {
             }
 
             if (dependency != null && module != null) {
-                val dependent = Class.forName(element.asType().toString()).kotlin
-                bindings.add(BindingTo(dependent, dependency, module))
+                bindings.add(BindingTo(element.asType().toString(), dependency, module))
             } else {
                 throw IllegalArgumentException("Found $element with an incorrect configuration. Dependency and Module are required but are $dependency and $module")
             }
