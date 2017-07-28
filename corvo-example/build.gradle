@@ -6,7 +6,7 @@ android {
     buildToolsVersion "25.0.2"
     defaultConfig {
         applicationId "jordylangen.corvo.example"
-        minSdkVersion 14
+        minSdkVersion 15
         targetSdkVersion 25
         versionCode 1
         versionName "1.0"
@@ -29,6 +29,8 @@ dependencies {
 
     compile "com.google.dagger:dagger:${versions.dagger}"
     kapt "com.google.dagger:dagger-compiler:${versions.dagger}"
+
+    compile 'com.squareup.coordinators:coordinators:0.3'
 }
 repositories {
     mavenCentral()

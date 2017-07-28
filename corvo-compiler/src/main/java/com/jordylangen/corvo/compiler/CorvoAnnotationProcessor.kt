@@ -1,11 +1,12 @@
 package com.jordylangen.corvo.compiler
 
+import com.jordylangen.corvo.annotations.BindingDependencyResolver
 import com.jordylangen.corvo.annotations.BindsTo
-import com.squareup.javapoet.AnnotationSpec
-import com.squareup.javapoet.JavaFile
-import com.squareup.javapoet.MethodSpec
-import com.squareup.javapoet.TypeSpec
+import com.squareup.javapoet.*
 import dagger.Component
+import java.lang.IllegalArgumentException
+import java.lang.reflect.Method
+import java.util.HashMap
 import javax.annotation.processing.*
 import javax.lang.model.SourceVersion
 import javax.lang.model.util.Elements
@@ -20,7 +21,14 @@ class CorvoAnnotationProcessor : AbstractProcessor() {
     private lateinit var elementUtils: Elements
     private lateinit var filer: Filer
     private lateinit var messager: Messager
-    private var didProcess = false
+    private var processedElements = mutableListOf<Element>()
+
+    companion object {
+        private const val PACKAGE_NAME = "com.jordylangen.corvo"
+        private const val DAGGER_PROPERTY_MODULES = "modules"
+        private const val BINDS_TO_PROPERTY_DEPENDENCY = "dependency"
+        private const val BINDS_TO_PROPERTY_MODULE = "module"
+    }
 
     override fun init(processingEnv: ProcessingEnvironment) {
         super.init(processingEnv)
@@ -31,66 +39,114 @@ class CorvoAnnotationProcessor : AbstractProcessor() {
     }
 
     override fun process(annotations: MutableSet<out TypeElement>, roundEnv: RoundEnvironment): Boolean {
-        if (didProcess) {
+        val bindings = mutableListOf<BindingTo>()
+        val elements = roundEnv.getElementsAnnotatedWith(BindsTo::class.java)
+                .filter { !processedElements.contains(it) }
+
+        if (elements.isEmpty()) {
             return true
         }
 
-        val dependencies = mutableListOf<KClass<*>>()
-        val modules = mutableListOf<KClass<*>>()
-
-        for (element in roundEnv.getElementsAnnotatedWith(BindsTo::class.java)) {
-
-            val annotationMirrors = element.annotationMirrors.filter { mirror ->
-                mirror.annotationType.toString() == BindsTo::class.qualifiedName
-            }
-
-            for (annotationMirror in annotationMirrors) {
-                for (entry in annotationMirror.elementValues.entries) {
-                    if (entry.key.simpleName.toString() == "dependency") {
-                        val className = entry.value.value.toString()
-                        val klass = Class.forName(className).kotlin
-
-                        if (!dependencies.contains(klass)) {
-                            dependencies.add(klass)
-                        }
-                    }
-                    else if (entry.key.simpleName.toString() == "module") {
-                        val className = entry.value.value.toString()
-                        val klass = Class.forName(className).kotlin
-
-                        if (!modules.contains(klass)) {
-                            modules.add(klass)
-                        }
-                    }
-                }
-            }
+        for (element in elements) {
+            bindings.addAll(resolveBindings(element))
+            processedElements.add(element)
         }
 
+        val dependencies = bindings.map { binding -> binding.dependency }.distinct()
+        val modules = bindings.map { binding -> binding.module }.distinct()
+
         val componentAnnotation = AnnotationSpec.builder(Component::class.java)
-                .addMember("modules", modules.map { "${it.qualifiedName}.class" }.joinToString(separator = ", ", prefix = "{ ", postfix = " }"))
+                .addMember(DAGGER_PROPERTY_MODULES, modules.map { "${it.qualifiedName}.class" }.joinToString(separator = ", ", prefix = "{ ", postfix = " }"))
                 .build()
 
-        val methods = dependencies.map { dependency ->
+        val componentMethods = dependencies.map { dependency ->
             MethodSpec.methodBuilder("resolve${dependency.simpleName}")
                     .addModifiers(Modifier.PUBLIC, Modifier.ABSTRACT)
                     .returns(dependency.java)
                     .build()
         }
 
-        val typeSpec = TypeSpec.interfaceBuilder("CorvoComponent")
+        val corvoComponentSpec = TypeSpec.interfaceBuilder("CorvoComponent")
                 .addModifiers(Modifier.PUBLIC)
                 .addAnnotation(componentAnnotation)
-                .addMethods(methods)
+                .addMethods(componentMethods)
                 .build()
 
-        val file = JavaFile.builder("com.jordylangen.corvo", typeSpec)
+        val componentFile = JavaFile.builder(PACKAGE_NAME, corvoComponentSpec)
                 .build()
 
-        file.writeTo(filer)
+        componentFile.writeTo(filer)
 
-        didProcess = true
+        val proxyConstructorBuilder = MethodSpec.constructorBuilder()
+                .addModifiers(Modifier.PUBLIC)
+                .addParameter(ClassName.get(PACKAGE_NAME, "CorvoComponent"), "component")
+                .addStatement("this.component = component")
+                .addStatement("this.bindings = new HashMap<String, String>()")
+
+        for ((dependent, dependency) in bindings) {
+            proxyConstructorBuilder.addStatement("this.bindings.put(\"${dependent.java.canonicalName}\", \"${dependency.java.canonicalName}\")")
+        }
+
+        val resolveMethodBuilder = MethodSpec.methodBuilder("resolve")
+                .addModifiers(Modifier.PUBLIC)
+                .addTypeVariable(TypeVariableName.get("T"))
+                .addParameter(String::class.java, "className")
+                .addStatement("String dependency = bindings.get(className)")
+                .returns(TypeVariableName.get("T"))
+
+        for (binding in bindings) {
+            resolveMethodBuilder.addStatement("if (dependency.equals(\"${binding.dependency.java.canonicalName}\")) { return (T) component.resolve${binding.dependency.simpleName}(); }")
+        }
+
+        resolveMethodBuilder.addStatement("return null") // TODO throw an exception
+
+        val proxySpec = TypeSpec.classBuilder("CorvoBindingDependencyResolver")
+                .addField(ClassName.get(PACKAGE_NAME, "CorvoComponent"), "component", Modifier.PRIVATE, Modifier.FINAL)
+                .addField(ParameterizedTypeName.get(HashMap::class.java, String::class.java, String::class.java), "bindings", Modifier.PRIVATE, Modifier.FINAL)
+                .addMethod(proxyConstructorBuilder.build())
+                .addMethod(resolveMethodBuilder.build())
+                .addModifiers(Modifier.PUBLIC)
+                .addSuperinterface(BindingDependencyResolver::class.java)
+                .build()
+
+        val proxyFile = JavaFile.builder(PACKAGE_NAME, proxySpec)
+                .build()
+
+        proxyFile.writeTo(filer)
 
         return true
+    }
+
+    private fun resolveBindings(element: Element): List<BindingTo> {
+        val bindings = mutableListOf<BindingTo>()
+
+        val annotationMirrors = element.annotationMirrors.filter { mirror ->
+            mirror.annotationType.toString() == BindsTo::class.qualifiedName
+        }
+
+        for (annotationMirror in annotationMirrors) {
+            var dependency: KClass<*>? = null
+            var module: KClass<*>? = null
+
+            for ((key, value) in annotationMirror.elementValues) {
+                if (key.simpleName.toString() == BINDS_TO_PROPERTY_DEPENDENCY) {
+                    val className = value.value.toString()
+                    dependency = Class.forName(className).kotlin
+                } else if (key.simpleName.toString() == BINDS_TO_PROPERTY_MODULE) {
+                    val className = value.value.toString()
+                    module = Class.forName(className).kotlin
+                }
+            }
+
+            if (dependency != null && module != null) {
+                val dependent = Class.forName(element.asType().toString()).kotlin
+                bindings.add(BindingTo(dependent, dependency, module))
+            } else {
+                throw IllegalArgumentException("Found $element with an incorrect configuration. Dependency and Module are required but are $dependency and $module")
+            }
+        }
+
+        return bindings
     }
 
     override fun getSupportedAnnotationTypes(): MutableSet<String> {

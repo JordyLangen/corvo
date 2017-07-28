@@ -1,26 +1,26 @@
-apply plugin: 'com.android.library'
-
-android {
-    compileSdkVersion 25
-    buildToolsVersion "25.0.2"
-
-    defaultConfig {
-        minSdkVersion 14
-        targetSdkVersion 25
-        versionCode 1
-        versionName "1.0"
-
-        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
-
-    }
-    buildTypes {
-        release {
-            minifyEnabled false
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
-        }
-    }
-}
+apply plugin: 'java'
+apply plugin: 'kotlin'
 
 dependencies {
     compile project(':corvo-annotations')
+    compile "org.jetbrains.kotlin:kotlin-stdlib-jre7:${versions.kotlin}"
+    compile "org.jetbrains.kotlin:kotlin-reflect:${versions.kotlin}"
+
+    compile "com.google.dagger:dagger:${versions.dagger}"
+    compile 'com.squareup:javapoet:1.9.0'
+}
+
+sourceCompatibility = "1.7"
+targetCompatibility = "1.7"
+buildscript {
+    ext.kotlin_version = '1.1.2'
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:${versions.kotlin}"
+    }
+}
+repositories {
+    mavenCentral()
 }

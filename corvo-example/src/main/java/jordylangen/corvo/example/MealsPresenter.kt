@@ -1,3 +1,5 @@
 package jordylangen.corvo.example
 
-class MealsPresenter
+import com.squareup.coordinators.Coordinator
+
+class MealsPresenter : Coordinator()
