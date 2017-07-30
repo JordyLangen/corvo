@@ -24,6 +24,6 @@ val corvo = Corvo(componentProxy)
 Use the corvo instance to resolve a bound dependency
 
 ```kotlin
-val dependency = corvo.resolveBinding<MealsView, MealsPresenter>() // returns MealsPresenter?
-val dependency = corvo.resolveBinding("jordylangen.corvo.example.MealsPresenter") // returns Any?
+val dependency = corvo.resolveBinding<MealsView, MealsPresenter>()
+val dependency = corvo.resolveBinding("jordylangen.corvo.example.MealsView")
 ```
