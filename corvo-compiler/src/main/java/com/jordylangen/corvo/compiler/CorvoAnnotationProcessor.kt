@@ -14,6 +14,7 @@ import javax.lang.model.element.TypeElement
 import javax.lang.model.type.TypeMirror
 import javax.lang.model.util.Elements
 import javax.lang.model.util.Types
+import javax.tools.Diagnostic
 
 
 class CorvoAnnotationProcessor : AbstractProcessor() {
@@ -45,26 +46,33 @@ class CorvoAnnotationProcessor : AbstractProcessor() {
     }
 
     override fun process(annotations: MutableSet<out TypeElement>, roundEnv: RoundEnvironment): Boolean {
-        val bindings = mutableListOf<BindingTo>()
-        val elements = roundEnv.getElementsAnnotatedWith(BindsTo::class.java)
-                .filter { !processedElements.contains(it) }
+        try {
+            val bindings = mutableListOf<BindingTo>()
+            val elements = roundEnv.getElementsAnnotatedWith(BindsTo::class.java)
+                    .filter { !processedElements.contains(it) }
 
-        if (elements.isEmpty()) {
+            if (elements.isEmpty()) {
+                return true
+            }
+
+            for (element in elements) {
+                bindings.addAll(resolveBindings(element))
+                processedElements.add(element)
+            }
+
+            val dependencies = bindings.map { binding -> binding.dependency }.distinct()
+            val modules = bindings.map { binding -> binding.module }.distinct()
+
+            createComponent(dependencies, modules)
+            createComponentProxy(bindings)
+
             return true
         }
-
-        for (element in elements) {
-            bindings.addAll(resolveBindings(element))
-            processedElements.add(element)
+        catch (exception: Exception) {
+            messager.printMessage(Diagnostic.Kind.ERROR, exception.toString())
+            println(exception)
+            return true
         }
-
-        val dependencies = bindings.map { binding -> binding.dependency }.distinct()
-        val modules = bindings.map { binding -> binding.module }.distinct()
-
-        createComponent(dependencies, modules)
-        createComponentProxy(bindings)
-
-        return true
     }
 
     private fun resolveBindings(element: Element): List<BindingTo> {
