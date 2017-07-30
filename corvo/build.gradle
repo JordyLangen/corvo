@@ -2,7 +2,7 @@ apply plugin: 'java'
 apply plugin: 'kotlin'
 
 dependencies {
-    compile project(':corvo-annotations')
+    compile project(':corvo-common')
 }
 
 sourceCompatibility = "1.7"

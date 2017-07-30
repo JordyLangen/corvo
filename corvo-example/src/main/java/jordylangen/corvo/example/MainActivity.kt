@@ -3,7 +3,7 @@ package jordylangen.corvo.example
 import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
 import com.jordylangen.corvo.Corvo
-import com.jordylangen.corvo.CorvoBindingDependencyResolver
+import com.jordylangen.corvo.CorvoComponentProxy
 import com.jordylangen.corvo.DaggerCorvoComponent
 import com.squareup.coordinators.Coordinators
 
@@ -17,9 +17,9 @@ class MainActivity : AppCompatActivity() {
                 .sampleModule(SampleModule())
                 .build()
 
-        val resolver = CorvoBindingDependencyResolver(component)
+        val componentProxy = CorvoComponentProxy(component)
 
-        val corvo = Corvo(resolver)
+        val corvo = Corvo(componentProxy)
 
         val provider = CorvoCoordinatorProvider(corvo)
 

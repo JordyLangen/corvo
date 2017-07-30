@@ -9,7 +9,7 @@
           <set>
             <option value="$PROJECT_DIR$" />
             <option value="$PROJECT_DIR$/corvo" />
-            <option value="$PROJECT_DIR$/corvo-annotations" />
+            <option value="$PROJECT_DIR$/corvo-common" />
             <option value="$PROJECT_DIR$/corvo-compiler" />
             <option value="$PROJECT_DIR$/corvo-example" />
           </set>

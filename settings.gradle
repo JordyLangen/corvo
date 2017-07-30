@@ -1,1 +1,1 @@
-include ':corvo-example', ':corvo-annotations', ':corvo', ':corvo-compiler'
+include ':corvo-example', ':corvo-common', ':corvo', ':corvo-compiler'
