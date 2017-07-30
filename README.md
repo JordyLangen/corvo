@@ -16,14 +16,14 @@ val component = DaggerCorvoComponent.builder()
         .sampleModule(SampleModule())
         .build()
 
-val resolver = CorvoBindingDependencyResolver(component)
+val componentProxy = CorvoComponentProxy(component)
 
-val corvo = Corvo(resolver)
+val corvo = Corvo(componentProxy)
 ```
 
 Use the corvo instance to resolve a bound dependency
 
 ```kotlin
-val dependency = corvo.resolveBinding<MealsView, MealsPresenter>()
-val dependency = corvo.resolveBinding(view.javaClass.canonicalName)
+val dependency = corvo.resolveBinding<MealsView, MealsPresenter>() // returns MealsPresenter?
+val dependency = corvo.resolveBinding("jordylangen.corvo.example.MealsPresenter") // returns Any?
 ```
