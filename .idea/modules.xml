@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/corvo.iml" filepath="$PROJECT_DIR$/corvo.iml" />
+      <module fileurl="file://$PROJECT_DIR$/corvo-annotations/corvo-annotations.iml" filepath="$PROJECT_DIR$/corvo-annotations/corvo-annotations.iml" />
+      <module fileurl="file://$PROJECT_DIR$/corvo-compiler/corvo-compiler.iml" filepath="$PROJECT_DIR$/corvo-compiler/corvo-compiler.iml" />
+      <module fileurl="file://$PROJECT_DIR$/corvo/corvo-corvo.iml" filepath="$PROJECT_DIR$/corvo/corvo-corvo.iml" />
+      <module fileurl="file://$PROJECT_DIR$/corvo-example/corvo-example.iml" filepath="$PROJECT_DIR$/corvo-example/corvo-example.iml" />
+    </modules>
+  </component>
+</project>

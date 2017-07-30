@@ -1,0 +1,20 @@
+apply plugin: 'java'
+apply plugin: 'kotlin'
+
+dependencies {
+    compile project(':corvo-annotations')
+}
+
+sourceCompatibility = "1.7"
+targetCompatibility = "1.7"
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:${versions.kotlin}"
+    }
+}
+repositories {
+    mavenCentral()
+}
