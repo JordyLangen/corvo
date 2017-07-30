@@ -148,7 +148,7 @@ class CorvoAnnotationProcessor : AbstractProcessor() {
                 .returns(TypeVariableName.get("T"))
 
         for (binding in bindings) {
-            resolveMethodBuilder.addStatement("if (dependency.equals(\"${binding.dependency.qualifiedName}\")) { return (T) component.resolve${binding.dependency.simpleName}(); }")
+            resolveMethodBuilder.addStatement("if (dependency.equals(\"${binding.dependency.qualifiedName}\")) { return (T) $CORVO_COMPONENT_ARGUMENT.$RESOLVE_METHOD${binding.dependency.simpleName}(); }")
         }
 
         resolveMethodBuilder.addStatement("return null")
