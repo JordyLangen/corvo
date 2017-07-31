@@ -4,6 +4,7 @@
     <modules>
       <module fileurl="file://$PROJECT_DIR$/corvo.iml" filepath="$PROJECT_DIR$/corvo.iml" />
       <module fileurl="file://$PROJECT_DIR$/corvo-common/corvo-common.iml" filepath="$PROJECT_DIR$/corvo-common/corvo-common.iml" />
+      <module fileurl="file://$PROJECT_DIR$/corvo-common/corvo-common.iml" filepath="$PROJECT_DIR$/corvo-common/corvo-common.iml" />
       <module fileurl="file://$PROJECT_DIR$/corvo-compiler/corvo-compiler.iml" filepath="$PROJECT_DIR$/corvo-compiler/corvo-compiler.iml" />
       <module fileurl="file://$PROJECT_DIR$/corvo/corvo-corvo.iml" filepath="$PROJECT_DIR$/corvo/corvo-corvo.iml" />
       <module fileurl="file://$PROJECT_DIR$/corvo-example/corvo-example.iml" filepath="$PROJECT_DIR$/corvo-example/corvo-example.iml" />

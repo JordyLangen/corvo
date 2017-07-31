@@ -1,6 +1,6 @@
 package com.jordylangen.corvo
 
-class Corvo(val componentProxy: ComponentProxy) {
+class Corvo(private val componentProxy: ComponentProxy) {
 
     fun resolveBinding(dependent: String) : Any? {
         return componentProxy.resolve(dependent)
@@ -8,6 +8,6 @@ class Corvo(val componentProxy: ComponentProxy) {
 
     inline fun <reified TDependent : Any, reified TDependency : Any> resolveBinding() : TDependency? {
         val className = TDependent::class.java.canonicalName
-        return componentProxy.resolve(className)
+        return resolveBinding(className) as TDependency
     }
 }
