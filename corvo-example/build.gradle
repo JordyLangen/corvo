@@ -1,9 +1,10 @@
 apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
+apply plugin: 'kotlin-kapt'
 
 android {
     compileSdkVersion 26
-    buildToolsVersion "26.0.1"
+    buildToolsVersion "26.0.2"
     defaultConfig {
         applicationId "jordylangen.corvo.example"
         minSdkVersion 15
@@ -18,6 +19,12 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
+}
+
+android.defaultConfig.javaCompileOptions.annotationProcessorOptions.includeCompileClasspath = true
+
+kapt {
+    correctErrorTypes = true
 }
 
 dependencies {
