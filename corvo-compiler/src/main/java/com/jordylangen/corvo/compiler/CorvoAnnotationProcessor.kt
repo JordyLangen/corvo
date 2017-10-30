@@ -12,6 +12,7 @@ import javax.lang.model.util.Elements
 import javax.lang.model.util.Types
 import kotlin.reflect.KClass
 import javax.lang.model.element.*
+import javax.lang.model.type.TypeMirror
 
 
 class CorvoAnnotationProcessor : AbstractProcessor() {
@@ -51,17 +52,17 @@ class CorvoAnnotationProcessor : AbstractProcessor() {
             processedElements.add(element)
         }
 
-        val dependencies = bindings.map { binding -> binding.dependency }.distinct()
-        val modules = bindings.map { binding -> binding.module }.distinct()
+        val dependencies = bindings.map { binding -> binding.dependencyType }.distinct()
+        val modules = bindings.map { binding -> binding.moduleType }.distinct()
 
         val componentAnnotation = AnnotationSpec.builder(Component::class.java)
-                .addMember(DAGGER_PROPERTY_MODULES, modules.map { "${it.qualifiedName}.class" }.joinToString(separator = ", ", prefix = "{ ", postfix = " }"))
+                .addMember(DAGGER_PROPERTY_MODULES, modules.map { "${it.toString()}.class" }.joinToString(separator = ", ", prefix = "{ ", postfix = " }"))
                 .build()
 
         val componentMethods = dependencies.map { dependency ->
-            MethodSpec.methodBuilder("resolve${dependency.simpleName}")
+            MethodSpec.methodBuilder("resolve${dependency.toString().split('.')[dependency.toString().split('.').size - 1]}")
                     .addModifiers(Modifier.PUBLIC, Modifier.ABSTRACT)
-                    .returns(dependency.java)
+                    .returns(TypeName.get(dependency))
                     .build()
         }
 
@@ -82,8 +83,8 @@ class CorvoAnnotationProcessor : AbstractProcessor() {
                 .addStatement("this.component = component")
                 .addStatement("this.bindings = new HashMap<String, String>()")
 
-        for ((dependent, dependency) in bindings) {
-            proxyConstructorBuilder.addStatement("this.bindings.put(\"$dependent\", \"${dependency.java.canonicalName}\")")
+        for (binding in bindings) {
+            proxyConstructorBuilder.addStatement("this.bindings.put(\"${binding.dependent}\", \"${binding.dependencyType}\")")
         }
 
         val resolveMethodBuilder = MethodSpec.methodBuilder("resolve")
@@ -95,7 +96,7 @@ class CorvoAnnotationProcessor : AbstractProcessor() {
                 .returns(TypeVariableName.get("T"))
 
         for (binding in bindings) {
-            resolveMethodBuilder.addStatement("if (dependency.equals(\"${binding.dependency.java.canonicalName}\")) { return (T) component.resolve${binding.dependency.simpleName}(); }")
+            resolveMethodBuilder.addStatement("if (dependency.equals(\"${binding.dependencyType}\")) { return (T) component.resolve${binding.dependencyType.toString().split('.')[binding.dependencyType.toString().split('.').size - 1]}(); }")
         }
 
         resolveMethodBuilder.addStatement("return null") // TODO throw an exception
@@ -125,21 +126,19 @@ class CorvoAnnotationProcessor : AbstractProcessor() {
         }
 
         for (annotationMirror in annotationMirrors) {
-            var dependency: KClass<*>? = null
-            var module: KClass<*>? = null
+            var dependency: TypeMirror? = null
+            var module: TypeMirror? = null
 
             for ((key, value) in annotationMirror.elementValues) {
                 if (key.simpleName.toString() == BINDS_TO_PROPERTY_DEPENDENCY) {
-                    val className = value.value.toString()
-                    dependency = Class.forName(className).kotlin
+                    dependency = value.value as TypeMirror
                 } else if (key.simpleName.toString() == BINDS_TO_PROPERTY_MODULE) {
-                    val className = value.value.toString()
-                    module = Class.forName(className).kotlin
+                    module = value.value as TypeMirror
                 }
             }
 
             if (dependency != null && module != null) {
-                bindings.add(BindingTo(element.asType().toString(), dependency, module))
+                bindings.add(BindingTo(element.asType().toString(), dependency.toString(), dependency, module.toString(), module))
             } else {
                 throw IllegalArgumentException("Found $element with an incorrect configuration. Dependency and Module are required but are $dependency and $module")
             }
