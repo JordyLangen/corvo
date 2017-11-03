@@ -1,3 +1,6 @@
+
+![Build Status](https://travis-ci.org/JordyLangen/corvo.svg?branch=master)
+
 # Corvo
 Extension on top off Dagger that reduces the amount of complexity and/or boilerplate code when using Dagger in any form of Model-View-Something Architecture in Android
 
