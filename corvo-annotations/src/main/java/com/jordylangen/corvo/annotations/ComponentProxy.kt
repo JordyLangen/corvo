@@ -1,6 +1,6 @@
 package com.jordylangen.corvo.annotations
 
-interface BindingDependencyResolver {
+interface ComponentProxy {
 
     fun <T> resolve(className: String) : T
 }

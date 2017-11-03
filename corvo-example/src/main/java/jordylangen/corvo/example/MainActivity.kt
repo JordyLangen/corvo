@@ -15,9 +15,9 @@ class MainActivity : AppCompatActivity() {
                 .sampleModule(SampleModule())
                 .build()
 
-        val resolver = com.jordylangen.corvo.CorvoBindingDependencyResolver(component)
+        val componentProxy = com.jordylangen.corvo.CorvoComponentProxy(component)
 
-        val corvo = Corvo(resolver)
+        val corvo = Corvo(componentProxy)
 
         val provider = CorvoCoordinatorProvider(corvo)
 
